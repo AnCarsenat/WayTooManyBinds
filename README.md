@@ -4,4 +4,32 @@
 Fabric mod for searching and simulating keybind presses.
 
 This project is not associated with NebelNidas and dzwdz's [too-many-binds](https://github.com/ReviversMC/too-many-binds), however I've been given permission to use the name "Too Many Binds" for this mod.  
-This project aims to target newer versions of Minecraft (1.20+), please use the aforementioned mod if you wish to use a similar mod for older versions.  
+This project aims to target newer versions of Minecraft (1.20+), please use the aforementioned mod if you wish to use a similar mod for older versions.
+
+## Supported versions
+| Minecraft | Java | Notes |
+| --- | --- | --- |
+| 26.2 | 25 | Minecraft ships unobfuscated, so Loom does not remap the mod |
+| 1.21.11 | 21 | Built against Mojang mappings and remapped to intermediary |
+
+## Building
+The project uses [Stonecutter](https://stonecutter.kikugie.dev/) to target several Minecraft
+versions from a single source tree. Version-specific code is selected with `//?` comments,
+and each target has its own properties in `versions/<version>/gradle.properties`.
+
+```sh
+./gradlew buildAll          # build every supported version
+./gradlew ":26.2:build"     # build a single version
+```
+
+Each version writes its jar to `versions/<version>/build/libs/`. There is no jar in the
+repository root — the root project is only the Stonecutter controller.
+
+To switch which version the IDE resolves against, edit the `stonecutter.active(...)` call in
+`stonecutter.gradle` or run the generated `stonecutterSwitchTo<version>` task.
+
+### Adding a version
+1. Add it to `versions(...)` in `settings.gradle`.
+2. Create `versions/<version>/gradle.properties` with `minecraft_version`, `fabric_version`
+   and `java_version`.
+3. Add it to the `minecraft` matrix in `.github/workflows/build.yml`.
