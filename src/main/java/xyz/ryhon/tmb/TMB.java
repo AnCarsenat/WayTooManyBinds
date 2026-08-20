@@ -97,7 +97,7 @@ public class TMB implements ModInitializer {
 		public static boolean showBindIDs = false;
 		public static boolean drawUndeflowSuggestions = false;
 	
-		public static final Path configDir = FabricLoader.getInstance().getConfigDir().resolve("toomanybinds");
+		public static final Path configDir = FabricLoader.getInstance().getConfigDir().resolve("waytoomanybinds");
 		public static final Path configFile = configDir.resolve("config.json");
 
 		public static void loadConfig()

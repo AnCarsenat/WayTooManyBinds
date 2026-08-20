@@ -70,7 +70,7 @@ processResources {
 
 modrinth {
 	token = System.getenv("MODRINTH_TOKEN")
-	projectId = "toomanybinds"
+	projectId = "waytoomanybinds"
 	versionNumber = project.mod_version + "-" + mcVersion
 	versionType = "release"
 	uploadFile = isUnobfuscated ? tasks.named("jar") : tasks.named("remapJar")

@@ -2,7 +2,7 @@
 	"schemaVersion": 1,
 	"id": "tmb",
 	"version": "${version}",
-	"name": "Too Many Binds Plus",
+	"name": "Way Too Many Binds",
 	"description": "Search and simulate keybinds",
 	"authors": [
 		"AnCarsenat"
@@ -35,7 +35,7 @@
 		"modmenu": {
 			"links": {
 				"modmenu.donate": "https://github.com/sponsors/Ryhon0",
-				"modmenu.modrinth": "https://modrinth.com/mod/TooManyBinds",
+				"modmenu.modrinth": "https://modrinth.com/mod/WayTooManyBinds",
 				"modmenu.github_releases": "https://github.com/AnCarsenat/WayTooManyBinds/releases",
 				"modmenu.twitter": "https://twitter.com/RyhonDev"
 			}
