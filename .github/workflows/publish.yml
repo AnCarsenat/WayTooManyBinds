@@ -1,0 +1,72 @@
+# Publishes a release to Modrinth, one version per supported Minecraft version.
+#
+# Triggered by pushing a tag like "v1.3.0", or manually from the Actions tab.
+# Needs a MODRINTH_TOKEN repository secret with "Create versions" scope, and the
+# Modrinth project named by `projectId` in build.gradle must already exist —
+# Minotaur uploads versions, it cannot create the project itself.
+
+name: publish
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Mod version to publish, without the leading "v"'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    strategy:
+      fail-fast: false
+      # Upload one version at a time so a partial failure is easy to read, and to
+      # stay well clear of Modrinth's rate limit.
+      max-parallel: 1
+      matrix:
+        # Keep in sync with settings.gradle and build.yml.
+        minecraft: ["1.21.11", "26.2"]
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v4
+      - name: setup jdk
+        uses: actions/setup-java@v4
+        with:
+          # 26.x compiles against Java 25; older targets still build fine on it.
+          java-version: 25
+          distribution: 'temurin'
+      - name: validate gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
+      - name: make gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      # A tag push carries the version in the ref; a manual run carries it in the
+      # input. Both go through the environment rather than being interpolated into
+      # the script, so the value cannot break out into the shell.
+      - name: resolve mod version
+        id: modversion
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          version="${INPUT_VERSION:-$GITHUB_REF_NAME}"
+          version="${version#v}"
+          case "$version" in
+            '' | *[!0-9a-zA-Z.-]* )
+              echo "::error::refusing to publish version '$version'; expected only letters, digits, dots and hyphens" >&2
+              exit 1 ;;
+          esac
+          echo "value=$version" >> "$GITHUB_OUTPUT"
+
+      - name: publish ${{ matrix.minecraft }}
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          MOD_VERSION: ${{ steps.modversion.outputs.value }}
+        run: |
+          if [ -z "$MODRINTH_TOKEN" ]; then
+            echo "::error::MODRINTH_TOKEN secret is not set" >&2
+            exit 1
+          fi
+          ./gradlew ":${{ matrix.minecraft }}:modrinth" -Pmod_version="$MOD_VERSION"
