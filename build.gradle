@@ -1,27 +1,23 @@
 plugins {
-	id 'fabric-loom' version '1.11-SNAPSHOT'
+	// Minecraft 26.x ships unobfuscated, so Loom no longer remaps mods for it.
+	// Older versions still need the remapping variant of the plugin.
+	id 'net.fabricmc.fabric-loom' version "${loom_version}" apply false
+	id 'net.fabricmc.fabric-loom-remap' version "${loom_version}" apply false
 	id 'maven-publish'
 	id "com.modrinth.minotaur" version "2.+"
 }
+
+def mcVersion = project.minecraft_version
+def isUnobfuscated = stonecutter.eval(mcVersion, ">=26")
+def javaVersion = JavaVersion.toVersion(project.java_version)
+
+apply plugin: isUnobfuscated ? 'net.fabricmc.fabric-loom' : 'net.fabricmc.fabric-loom-remap'
 
 version = project.mod_version
 group = project.maven_group
 
 base {
-	archivesName = project.archives_base_name
-}
-
-modrinth {
-    token = System.getenv("MODRINTH_TOKEN")
-    projectId = "toomanybinds"
-    versionNumber = project.mod_version + "-" + project.minecraft_version
-    versionType = "release"
-    uploadFile = remapJar
-    gameVersions = [project.minecraft_version]
-    loaders = ["fabric", "quilt"]
-    dependencies {
-        required.project "fabric-api"
-    }
+	archivesName = project.archives_base_name + "-" + mcVersion
 }
 
 repositories {
@@ -34,29 +30,59 @@ repositories {
 
 dependencies {
 	// To change the versions see the gradle.properties file
-	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	minecraft "com.mojang:minecraft:${mcVersion}"
 
-	// Fabric API. This is technically optional, but you probably want it anyway.
-	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-	
-}
-
-processResources {
-	inputs.property "version", project.version
-
-	filesMatching("fabric.mod.json") {
-		expand "version": project.version
+	if (isUnobfuscated) {
+		implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+		implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+	} else {
+		mappings loom.officialMojangMappings()
+		modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+		modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 	}
 }
 
+// The access widener has to be written in the namespace Loom compiles against.
+// For 26.x that is Mojang's own names ("official"); before that it is "named".
+def accessWidenerDir = rootProject.file(isUnobfuscated
+		? "src/main/accesswidener/official"
+		: "src/main/accesswidener/named")
+
 loom {
-	accessWidenerPath = file("src/main/resources/tmb.accesswidener")
+	accessWidenerPath = new File(accessWidenerDir, "tmb.accesswidener")
+}
+
+// Ship the matching widener in the jar, where fabric.mod.json expects to find it.
+sourceSets.main.resources.srcDir accessWidenerDir
+
+processResources {
+	def modVersion = project.version
+	inputs.property "version", modVersion
+	inputs.property "minecraft_version", mcVersion
+	inputs.property "java_version", project.java_version
+
+	filesMatching("fabric.mod.json") {
+		expand "version": modVersion,
+				"minecraft_version": mcVersion,
+				"java_version": project.java_version
+	}
+}
+
+modrinth {
+	token = System.getenv("MODRINTH_TOKEN")
+	projectId = "toomanybinds"
+	versionNumber = project.mod_version + "-" + mcVersion
+	versionType = "release"
+	uploadFile = isUnobfuscated ? tasks.named("jar") : tasks.named("remapJar")
+	gameVersions = [mcVersion]
+	loaders = ["fabric", "quilt"]
+	dependencies {
+		required.project "fabric-api"
+	}
 }
 
 tasks.withType(JavaCompile).configureEach {
-	it.options.release = 21
+	it.options.release = Integer.parseInt(project.java_version)
 }
 
 java {
@@ -65,13 +91,16 @@ java {
 	// If you remove this line, sources will not be generated.
 	withSourcesJar()
 
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
+	sourceCompatibility = javaVersion
+	targetCompatibility = javaVersion
 }
 
 jar {
-	from("LICENSE") {
-		rename { "${it}_${project.base.archivesName.get()}"}
+	def projectName = project.base.archivesName.get()
+	inputs.property "projectName", projectName
+
+	from(rootProject.file("LICENSE")) {
+		rename { "${it}_$projectName"}
 	}
 }
 
@@ -79,7 +108,7 @@ jar {
 publishing {
 	publications {
 		create("mavenJava", MavenPublication) {
-			artifactId = project.archives_base_name
+			artifactId = project.base.archivesName.get()
 			from components.java
 		}
 	}
