@@ -32,5 +32,5 @@ jobs:
       - name: capture build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: tmb-${{ matrix.minecraft }}
+          name: wtmb-${{ matrix.minecraft }}
           path: versions/${{ matrix.minecraft }}/build/libs/

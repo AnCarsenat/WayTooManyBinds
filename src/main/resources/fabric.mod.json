@@ -1,6 +1,6 @@
 {
 	"schemaVersion": 1,
-	"id": "tmb",
+	"id": "wtmb",
 	"version": "${version}",
 	"name": "Way Too Many Binds",
 	"description": "Search and simulate keybinds",
@@ -17,14 +17,14 @@
 		"issues": "https://github.com/AnCarsenat/WayTooManyBinds/issues"
 	},
 	"license": "GPL-3.0",
-	"icon": "assets/tmb/icon.png",
+	"icon": "assets/wtmb/icon.png",
 	"environment": "client",
 	"entrypoints": {
 		"main": [
-			"xyz.ryhon.tmb.TMB"
+			"io.github.ancarsenat.wtmb.WTMB"
 		]
 	},
-	"accessWidener": "tmb.accesswidener",
+	"accessWidener": "wtmb.accesswidener",
 	"depends": {
 		"fabricloader": ">=0.19.3",
 		"minecraft": "~${minecraft_version}",

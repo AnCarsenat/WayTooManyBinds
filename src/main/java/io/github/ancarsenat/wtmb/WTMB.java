@@ -1,4 +1,4 @@
-package xyz.ryhon.tmb;
+package io.github.ancarsenat.wtmb;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -25,8 +25,8 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-public class TMB implements ModInitializer {
-	public static final Logger LOGGER = LoggerFactory.getLogger("tmb");
+public class WTMB implements ModInitializer {
+	public static final Logger LOGGER = LoggerFactory.getLogger("wtmb");
 	static ArrayList<KeyMapping> toPress = new ArrayList<>();
 	static ArrayList<KeyMapping> toRelease = new ArrayList<>();
 
@@ -34,10 +34,10 @@ public class TMB implements ModInitializer {
 	public void onInitialize() {
 		Config.loadConfig();
 
-		Category category = Category.register(Identifier.fromNamespaceAndPath("tmb", "tmb"));
+		Category category = Category.register(Identifier.fromNamespaceAndPath("wtmb", "wtmb"));
 		KeyMapping searchScreenBind;
 		searchScreenBind = new KeyMapping(
-				"key.tmb.search",
+				"key.wtmb.search",
 				InputConstants.Type.KEYSYM,
 				GLFW.GLFW_KEY_ENTER,
 				category);
@@ -58,7 +58,7 @@ public class TMB implements ModInitializer {
 
 		KeyMapping reloadConfigBind;
 		reloadConfigBind = new KeyMapping(
-				"key.tmb.reloadConfig",
+				"key.wtmb.reloadConfig",
 				InputConstants.Type.KEYSYM,
 				GLFW.GLFW_KEY_UNKNOWN,
 				category);

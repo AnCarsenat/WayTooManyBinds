@@ -1,4 +1,4 @@
-package xyz.ryhon.tmb;
+package io.github.ancarsenat.wtmb;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -75,7 +75,7 @@ public class SearchScreen extends Screen {
 	}
 
 	int getEntryHeight() {
-		return TMB.Config.showBindIDs ? 9 : 5;
+		return WTMB.Config.showBindIDs ? 9 : 5;
 	}
 
 	/**
@@ -116,7 +116,7 @@ public class SearchScreen extends Screen {
 			offset = 0;
 
 		for (BindingEntry be : matched) {
-			if (!TMB.Config.drawUndeflowSuggestions && i - offset < 0) {
+			if (!WTMB.Config.drawUndeflowSuggestions && i - offset < 0) {
 				i++;
 				continue;
 			}
@@ -142,7 +142,7 @@ public class SearchScreen extends Screen {
 					searchBox.getY() + searchBox.getHeight() + ((i - offset) * rowSize * 2),
 					nameColor);
 
-			if (TMB.Config.showBindIDs) {
+			if (WTMB.Config.showBindIDs) {
 				text.draw(be.id,
 						searchBox.getX(),
 						searchBox.getY() + searchBox.getHeight() + ((i - offset) * rowSize * 2) + rowSize,
@@ -220,7 +220,7 @@ public class SearchScreen extends Screen {
 				offset = 0;
 
 			for (BindingEntry be : matched) {
-				if (!TMB.Config.drawUndeflowSuggestions && i - offset < 0) {
+				if (!WTMB.Config.drawUndeflowSuggestions && i - offset < 0) {
 					i++;
 					continue;
 				}
@@ -268,7 +268,7 @@ public class SearchScreen extends Screen {
 	void onAccept() {
 		KeyMapping bind = getSelectedBind();
 		if (bind != null)
-			TMB.queuePress(bind);
+			WTMB.queuePress(bind);
 		//? if >=26 {
 		minecraft.gui.setScreen(null);
 		//?} else
@@ -276,13 +276,13 @@ public class SearchScreen extends Screen {
 	}
 
 	void onIdSetting(Button b) {
-		TMB.Config.showBindIDs = !TMB.Config.showBindIDs;
-		TMB.Config.saveConfig();
+		WTMB.Config.showBindIDs = !WTMB.Config.showBindIDs;
+		WTMB.Config.saveConfig();
 	}
 
 	void onUnderflowSetting(Button b) {
-		TMB.Config.drawUndeflowSuggestions = !TMB.Config.drawUndeflowSuggestions;
-		TMB.Config.saveConfig();
+		WTMB.Config.drawUndeflowSuggestions = !WTMB.Config.drawUndeflowSuggestions;
+		WTMB.Config.saveConfig();
 	}
 
 	List<BindingEntry> match(String query) {

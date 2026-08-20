@@ -49,7 +49,7 @@ def accessWidenerDir = rootProject.file(isUnobfuscated
 		: "src/main/accesswidener/named")
 
 loom {
-	accessWidenerPath = new File(accessWidenerDir, "tmb.accesswidener")
+	accessWidenerPath = new File(accessWidenerDir, "wtmb.accesswidener")
 }
 
 // Ship the matching widener in the jar, where fabric.mod.json expects to find it.
