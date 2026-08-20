@@ -6,28 +6,31 @@ import java.util.Comparator;
 
 import org.lwjgl.glfw.GLFW;
 
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.input.KeyInput;
-import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.util.math.Rect2i;
-import net.minecraft.text.Text;
-import net.minecraft.util.Language;
+import net.minecraft.client.KeyMapping;
+//? if >=26 {
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+//?} else
+/*import net.minecraft.client.gui.GuiGraphics;*/
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.renderer.Rect2i;
+import net.minecraft.locale.Language;
+import net.minecraft.network.chat.Component;
 
 public class SearchScreen extends Screen {
-	TextFieldWidget searchBox;
-	ButtonWidget idSettingButton;
-	ButtonWidget underflowSettingButton;
+	EditBox searchBox;
+	Button idSettingButton;
+	Button underflowSettingButton;
 
 	List<BindingEntry> binds = new ArrayList<>();
 	List<BindingEntry> matched = new ArrayList<>();
 	int selectedIndex = 0;
 
 	public SearchScreen() {
-		super(Text.translatable("searchScreen.title"));
+		super(Component.translatable("searchScreen.title"));
 		binds = getEntries();
 	}
 
@@ -37,25 +40,25 @@ public class SearchScreen extends Screen {
 			int buttonSize = 16;
 			int y = 0;
 
-			idSettingButton = ButtonWidget.builder(Text.literal("ID"), this::onIdSetting)
-					.dimensions(0, y, buttonSize, buttonSize).build();
-			addDrawableChild(idSettingButton);
+			idSettingButton = Button.builder(Component.literal("ID"), this::onIdSetting)
+					.bounds(0, y, buttonSize, buttonSize).build();
+			addRenderableWidget(idSettingButton);
 			y += buttonSize;
 
-			underflowSettingButton = ButtonWidget.builder(Text.literal("↑"), this::onUnderflowSetting)
-					.dimensions(0, y, buttonSize, buttonSize).build();
-			addDrawableChild(underflowSettingButton);
+			underflowSettingButton = Button.builder(Component.literal("↑"), this::onUnderflowSetting)
+					.bounds(0, y, buttonSize, buttonSize).build();
+			addRenderableWidget(underflowSettingButton);
 			y += buttonSize;
 		}
 
-		searchBox = new TextFieldWidget(client.textRenderer, width / 2, 24,
-				Text.empty());
-		searchBox.setChangedListener(this::onQueryChanged);
+		searchBox = new EditBox(font, width / 2, 24,
+				Component.empty());
+		searchBox.setResponder(this::onQueryChanged);
 
 		searchBox.setPosition(width / 2 - (searchBox.getWidth() / 2), height / 2 - (searchBox.getHeight() / 2));
 
-		addDrawable(searchBox);
-		addSelectableChild(searchBox);
+		addRenderableOnly(searchBox);
+		addWidget(searchBox);
 		setInitialFocus(searchBox);
 
 		onQueryChanged("");
@@ -65,11 +68,32 @@ public class SearchScreen extends Screen {
 		return TMB.Config.showBindIDs ? 9 : 5;
 	}
 
-	@Override
-	public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-		super.render(context, mouseX, mouseY, delta);
+	/**
+	 * Draws a string with a shadow. The concrete call differs per version, so the
+	 * version-specific render entrypoint below supplies the implementation and the
+	 * rest of the screen stays shared.
+	 */
+	@FunctionalInterface
+	interface TextDrawer {
+		void draw(String text, int x, int y, int color);
+	}
 
-		context.drawTextWithShadow(client.textRenderer, (selectedIndex + 1) + "/" + matched.size(),
+	//? if >=26 {
+	@Override
+	public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
+		super.extractRenderState(context, mouseX, mouseY, delta);
+		renderEntries((s, x, y, color) -> context.text(font, s, x, y, color), mouseX, mouseY);
+	}
+	//?} else {
+	/*@Override
+	public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+		super.render(context, mouseX, mouseY, delta);
+		renderEntries((s, x, y, color) -> context.drawString(font, s, x, y, color), mouseX, mouseY);
+	}
+	*///?}
+
+	void renderEntries(TextDrawer text, int mouseX, int mouseY) {
+		text.draw((selectedIndex + 1) + "/" + matched.size(),
 				searchBox.getX() + searchBox.getWidth() + 8, searchBox.getY() + (searchBox.getHeight() / 2) - 4,
 				0xffffffff);
 
@@ -97,25 +121,25 @@ public class SearchScreen extends Screen {
 			int nameColor = selected ? 0xffffff00 : (hovered ? 0xffdddd88 : 0xffdddddd);
 			int keyColor = selected ? 0xff666600 : (hovered ? 0xff666644 : 0xff666666);
 
-			context.drawTextWithShadow(client.textRenderer, be.name,
+			text.draw(be.name,
 					searchBox.getX(),
 					searchBox.getY() + searchBox.getHeight() + ((i - offset) * rowSize * 2),
 					nameColor);
 
-			int catWidth = client.textRenderer.getWidth(be.categoryName);
-			context.drawTextWithShadow(client.textRenderer, be.categoryName,
+			int catWidth = font.width(be.categoryName);
+			text.draw(be.categoryName,
 					searchBox.getX() + searchBox.getWidth() - catWidth,
 					searchBox.getY() + searchBox.getHeight() + ((i - offset) * rowSize * 2),
 					nameColor);
 
 			if (TMB.Config.showBindIDs) {
-				context.drawTextWithShadow(client.textRenderer, be.id,
+				text.draw(be.id,
 						searchBox.getX(),
 						searchBox.getY() + searchBox.getHeight() + ((i - offset) * rowSize * 2) + rowSize,
 						keyColor);
 
-				catWidth = client.textRenderer.getWidth(be.categoryId);
-				context.drawTextWithShadow(client.textRenderer, be.categoryId,
+				catWidth = font.width(be.categoryId);
+				text.draw(be.categoryId,
 						searchBox.getX() + searchBox.getWidth() - catWidth,
 						searchBox.getY() + searchBox.getHeight() + ((i - offset) * rowSize * 2) + rowSize,
 						keyColor);
@@ -126,8 +150,8 @@ public class SearchScreen extends Screen {
 	}
 
 	@Override
-	public boolean keyPressed(KeyInput input) {
-		int keyCode = input.getKeycode();
+	public boolean keyPressed(KeyEvent input) {
+		int keyCode = input.key();
 		boolean handled = false;
 		if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
 			onAccept();
@@ -172,7 +196,7 @@ public class SearchScreen extends Screen {
 	}
 
 	@Override
-	public boolean mouseClicked(Click click, boolean doubled) {
+	public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
 		int button = click.button();
 		double mouseX = click.x();
 		double mouseY = click.y();
@@ -225,25 +249,25 @@ public class SearchScreen extends Screen {
 		selectedIndex = 0;
 	}
 
-	KeyBinding getSelectedBind() {
+	KeyMapping getSelectedBind() {
 		if (matched.size() == 0)
 			return null;
 		return matched.get(selectedIndex).bind;
 	}
 
 	void onAccept() {
-		KeyBinding bind = getSelectedBind();
+		KeyMapping bind = getSelectedBind();
 		if (bind != null)
 			TMB.queuePress(bind);
-		client.setScreen(null);
+		minecraft.setScreenAndShow(null);
 	}
 
-	void onIdSetting(ButtonWidget b) {
+	void onIdSetting(Button b) {
 		TMB.Config.showBindIDs = !TMB.Config.showBindIDs;
 		TMB.Config.saveConfig();
 	}
 
-	void onUnderflowSetting(ButtonWidget b) {
+	void onUnderflowSetting(Button b) {
 		TMB.Config.drawUndeflowSuggestions = !TMB.Config.drawUndeflowSuggestions;
 		TMB.Config.saveConfig();
 	}
@@ -262,13 +286,13 @@ public class SearchScreen extends Screen {
 	List<BindingEntry> getEntries() {
 		ArrayList<BindingEntry> list = new ArrayList<>();
 
-		for (KeyBinding e : KeyBinding.KEYS_BY_ID.values()) {
-			String name = Language.getInstance().get(e.getId(), e.getId());
-			String categoryId = "key.category." + e.getCategory().id().toTranslationKey();
-			String categoryName = Language.getInstance().get(categoryId,categoryId);
+		for (KeyMapping e : KeyMapping.ALL.values()) {
+			String name = Language.getInstance().getOrDefault(e.getName(), e.getName());
+			String categoryId = "key.category." + e.getCategory().id().toLanguageKey();
+			String categoryName = Language.getInstance().getOrDefault(categoryId, categoryId);
 
 			BindingEntry be = new BindingEntry(e,
-					e.getId(), name,
+					e.getName(), name,
 					categoryId, categoryName);
 
 			list.add(be);
@@ -280,7 +304,7 @@ public class SearchScreen extends Screen {
 	}
 
 	class BindingEntry {
-		public BindingEntry(KeyBinding bind, String id, String name, String categoryId, String categoryName) {
+		public BindingEntry(KeyMapping bind, String id, String name, String categoryId, String categoryName) {
 			this.bind = bind;
 
 			this.id = id;
@@ -290,7 +314,7 @@ public class SearchScreen extends Screen {
 			this.categoryName = categoryName;
 		}
 
-		public KeyBinding bind;
+		public KeyMapping bind;
 
 		public String id;
 		public String name;

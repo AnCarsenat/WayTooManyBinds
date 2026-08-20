@@ -2,12 +2,16 @@ package xyz.ryhon.tmb;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+//? if >=26 {
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
+//?} else
+/*import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;*/
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.option.KeyBinding.Category;
-import net.minecraft.client.util.InputUtil;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.KeyMapping.Category;
+import net.minecraft.resources.Identifier;
+
+import com.mojang.blaze3d.platform.InputConstants;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,57 +27,63 @@ import com.google.gson.JsonParser;
 
 public class TMB implements ModInitializer {
 	public static final Logger LOGGER = LoggerFactory.getLogger("tmb");
-	static ArrayList<KeyBinding> toPress = new ArrayList<>();
-	static ArrayList<KeyBinding> toRelease = new ArrayList<>();
+	static ArrayList<KeyMapping> toPress = new ArrayList<>();
+	static ArrayList<KeyMapping> toRelease = new ArrayList<>();
 
 	@Override
 	public void onInitialize() {
 		Config.loadConfig();
-		
-		Category category = Category.create(Identifier.of("tmb","tmb"));
-		KeyBinding searchScreenBind;
-		searchScreenBind = new KeyBinding(
+
+		Category category = Category.register(Identifier.fromNamespaceAndPath("tmb", "tmb"));
+		KeyMapping searchScreenBind;
+		searchScreenBind = new KeyMapping(
 				"key.tmb.search",
-				InputUtil.Type.KEYSYM,
+				InputConstants.Type.KEYSYM,
 				GLFW.GLFW_KEY_ENTER,
 				category);
-		KeyBindingHelper.registerKeyBinding(searchScreenBind);
+		//? if >=26 {
+		KeyMappingHelper.registerKeyMapping(searchScreenBind);
+		//?} else
+		/*KeyBindingHelper.registerKeyBinding(searchScreenBind);*/
 		ClientTickEvents.START_CLIENT_TICK.register(client -> {
-			if (searchScreenBind.wasPressed()) {
+			if (searchScreenBind.consumeClick()) {
 				SearchScreen s = new SearchScreen();
-				client.setScreen(s);
+				client.setScreenAndShow(s);
 			}
 		});
-		
-		KeyBinding reloadConfigBind;
-		reloadConfigBind = new KeyBinding(
+
+		KeyMapping reloadConfigBind;
+		reloadConfigBind = new KeyMapping(
 				"key.tmb.reloadConfig",
-				InputUtil.Type.KEYSYM,
+				InputConstants.Type.KEYSYM,
 				GLFW.GLFW_KEY_UNKNOWN,
 				category);
-		KeyBindingHelper.registerKeyBinding(reloadConfigBind);
+		//? if >=26 {
+		KeyMappingHelper.registerKeyMapping(reloadConfigBind);
+		//?} else
+		/*KeyBindingHelper.registerKeyBinding(reloadConfigBind);*/
 		ClientTickEvents.START_CLIENT_TICK.register(client -> {
-			if (reloadConfigBind.wasPressed()) {
+			if (reloadConfigBind.consumeClick()) {
 				Config.loadConfig();
 			}
 		});
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
-			for (KeyBinding bind : toRelease) {
-				bind.pressed = false;
+			for (KeyMapping bind : toRelease) {
+				bind.setDown(false);
 			}
 			toRelease.clear();
 
-			for (KeyBinding bind : toPress) {
-				bind.timesPressed++;
-				bind.pressed = true;
+			for (KeyMapping bind : toPress) {
+				bind.clickCount++;
+				bind.setDown(true);
 				toRelease.add(bind);
 			}
 			toPress.clear();
 		});
 	}
 
-	public static void queuePress(KeyBinding bind)
+	public static void queuePress(KeyMapping bind)
 	{
 		toPress.add(bind);
 	}

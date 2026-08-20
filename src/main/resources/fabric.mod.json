@@ -5,12 +5,16 @@
 	"name": "Too Many Binds Plus",
 	"description": "Search and simulate keybinds",
 	"authors": [
+		"AnCarsenat"
+	],
+	"contributors": [
+		"Claude (Opus 5)",
 		"Ryhon"
 	],
 	"contact": {
 		"homepage": "https://ryhon.xyz/",
-		"sources": "https://github.com/Ryhon0/TooManyBinds",
-		"issues": "https://github.com/Ryhon0/TooManyBinds/issues"
+		"sources": "https://github.com/AnCarsenat/WayTooManyBinds",
+		"issues": "https://github.com/AnCarsenat/WayTooManyBinds/issues"
 	},
 	"license": "GPL-3.0",
 	"icon": "assets/tmb/icon.png",
@@ -22,20 +26,17 @@
 	},
 	"accessWidener": "tmb.accesswidener",
 	"depends": {
-		"fabricloader": "*",
-		"minecraft": "*",
-		"java": ">=21",
+		"fabricloader": ">=0.19.3",
+		"minecraft": "~${minecraft_version}",
+		"java": ">=${java_version}",
 		"fabric-api": "*"
 	},
-	"custom":
-	{
-		"modmenu":
-		{
-			"links":
-			{
+	"custom": {
+		"modmenu": {
+			"links": {
 				"modmenu.donate": "https://github.com/sponsors/Ryhon0",
 				"modmenu.modrinth": "https://modrinth.com/mod/TooManyBinds",
-				"modmenu.github_releases": "https://github.com/Ryhon0/TooManyBinds/releases",
+				"modmenu.github_releases": "https://github.com/AnCarsenat/WayTooManyBinds/releases",
 				"modmenu.twitter": "https://twitter.com/RyhonDev"
 			}
 		}
