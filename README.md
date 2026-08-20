@@ -1,10 +1,28 @@
-<img src="icon.png" align="right" height=48>  
+<img src="https://raw.githubusercontent.com/AnCarsenat/WayTooManyBinds/master/icon.png" align="right" height=48>  
 
 # Way Too Many Binds
 Fabric mod for searching and simulating keybind presses.
 
 This project is not associated with NebelNidas and dzwdz's [too-many-binds](https://github.com/ReviversMC/too-many-binds). The upstream mod it is based on was given permission to use the name "Too Many Binds"; this one goes by "Way Too Many Binds".  
 This project aims to target newer versions of Minecraft (1.20+), please use the aforementioned mod if you wish to use a similar mod for older versions.
+
+## Usage
+
+- **Enter** (rebindable) opens the search screen
+- Type to filter, **Up/Down** or scroll to pick, **Enter** or click to press
+- Matching covers the keybind's name, its category, and their translation keys
+- The **ID** button shows raw ids next to each entry
+- The **↑** button also lists entries scrolled off the top
+
+Config lives in `config/waytoomanybinds/config.json` and there is a second,
+unbound key to reload it in place.
+
+## Notes
+
+Client-side only — nothing is required on the server. Needs Fabric API.
+
+GPL-3.0. Based on [TooManyBinds](https://modrinth.com/mod/toomanybinds) by
+Ryhon0.
 
 ## Supported versions
 | Minecraft | Java | Notes |

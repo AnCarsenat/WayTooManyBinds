@@ -73,6 +73,9 @@ modrinth {
 	projectId = "waytoomanybinds"
 	versionNumber = project.mod_version + "-" + mcVersion
 	versionType = "release"
+	// The project page shows the README verbatim, so image paths in it have to be
+	// absolute -- Modrinth has no repository to resolve them against.
+	syncBodyFrom = rootProject.file("README.md").text
 	uploadFile = isUnobfuscated ? tasks.named("jar") : tasks.named("remapJar")
 	gameVersions = [mcVersion]
 	loaders = ["fabric", "quilt"]
