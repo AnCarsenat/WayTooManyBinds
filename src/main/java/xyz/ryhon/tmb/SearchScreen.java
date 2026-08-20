@@ -64,6 +64,16 @@ public class SearchScreen extends Screen {
 		onQueryChanged("");
 	}
 
+	/**
+	 * Pausing the integrated server makes it save the world, which shows the autosave
+	 * indicator every time the search screen is opened. This screen is transient, so
+	 * there is nothing to pause for.
+	 */
+	@Override
+	public boolean isPauseScreen() {
+		return false;
+	}
+
 	int getEntryHeight() {
 		return TMB.Config.showBindIDs ? 9 : 5;
 	}
@@ -259,7 +269,10 @@ public class SearchScreen extends Screen {
 		KeyMapping bind = getSelectedBind();
 		if (bind != null)
 			TMB.queuePress(bind);
-		minecraft.setScreenAndShow(null);
+		//? if >=26 {
+		minecraft.gui.setScreen(null);
+		//?} else
+		/*minecraft.setScreen(null);*/
 	}
 
 	void onIdSetting(Button b) {

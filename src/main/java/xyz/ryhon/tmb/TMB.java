@@ -48,7 +48,11 @@ public class TMB implements ModInitializer {
 		ClientTickEvents.START_CLIENT_TICK.register(client -> {
 			if (searchScreenBind.consumeClick()) {
 				SearchScreen s = new SearchScreen();
-				client.setScreenAndShow(s);
+				// setScreenAndShow() renders an out-of-band frame, which shows up as a flash.
+				//? if >=26 {
+				client.gui.setScreen(s);
+				//?} else
+				/*client.setScreen(s);*/
 			}
 		});
 
