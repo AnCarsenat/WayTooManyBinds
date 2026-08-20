@@ -12,7 +12,7 @@
 		"Ryhon"
 	],
 	"contact": {
-		"homepage": "https://ryhon.xyz/",
+		"homepage": "https://modrinth.com/mod/waytoomanybinds/",
 		"sources": "https://github.com/AnCarsenat/WayTooManyBinds",
 		"issues": "https://github.com/AnCarsenat/WayTooManyBinds/issues"
 	},
@@ -34,10 +34,9 @@
 	"custom": {
 		"modmenu": {
 			"links": {
-				"modmenu.donate": "https://github.com/sponsors/Ryhon0",
+				"modmenu.donate": "https://ko-fi.com/ancar",
 				"modmenu.modrinth": "https://modrinth.com/mod/WayTooManyBinds",
 				"modmenu.github_releases": "https://github.com/AnCarsenat/WayTooManyBinds/releases",
-				"modmenu.twitter": "https://twitter.com/RyhonDev"
 			}
 		}
 	}
