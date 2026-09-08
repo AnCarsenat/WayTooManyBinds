@@ -31,9 +31,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: setup jdk
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           # 26.x compiles against Java 25; older targets still build fine on it.
           java-version: 25
