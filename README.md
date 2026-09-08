@@ -18,6 +18,12 @@
 
 ---
 
+<p align="center">
+  <img src="https://cdn.modrinth.com/data/f5klI0gV/images/5f1281683d53e1c21f13ca0a13d3418b2cd042cb.png" alt="The keybind search screen" width="720">
+</p>
+
+---
+
 Once you have enough mods installed, the controls menu turns into a scroll
 marathon and every convenient key is already taken. This mod gives you one key
 that opens a search box: type part of a keybind's name, press Enter, and it
