@@ -2,9 +2,10 @@ package io.github.ancarsenat.wtmb;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Comparator;
 
-import org.lwjgl.glfw.GLFW;
+import com.mojang.blaze3d.platform.InputConstants;
 
 import net.minecraft.client.KeyMapping;
 //? if >=26 {
@@ -25,7 +26,7 @@ public class SearchScreen extends Screen {
 	Button idSettingButton;
 	Button underflowSettingButton;
 
-	List<BindingEntry> binds = new ArrayList<>();
+	List<BindingEntry> binds;
 	List<BindingEntry> matched = new ArrayList<>();
 	int selectedIndex = 0;
 
@@ -51,17 +52,20 @@ public class SearchScreen extends Screen {
 			y += buttonSize;
 		}
 
+		// init() runs again on every resize; keep what the user already typed.
+		String previousQuery = searchBox != null ? searchBox.getValue() : "";
+
 		searchBox = new EditBox(font, width / 2, 24,
 				Component.empty());
+		searchBox.setValue(previousQuery);
 		searchBox.setResponder(this::onQueryChanged);
 
 		searchBox.setPosition(width / 2 - (searchBox.getWidth() / 2), height / 2 - (searchBox.getHeight() / 2));
 
-		addRenderableOnly(searchBox);
-		addWidget(searchBox);
+		addRenderableWidget(searchBox);
 		setInitialFocus(searchBox);
 
-		onQueryChanged("");
+		onQueryChanged(previousQuery);
 	}
 
 	/**
@@ -76,6 +80,40 @@ public class SearchScreen extends Screen {
 
 	int getEntryHeight() {
 		return WTMB.Config.showBindIDs ? 9 : 5;
+	}
+
+	/** Height of one list row, in pixels. */
+	int rowHeight() {
+		return getEntryHeight() * 2;
+	}
+
+	/** Index of the first entry drawn directly below the search box. */
+	int scrollOffset() {
+		int halfRows = (height - searchBox.getY() - searchBox.getHeight()) / rowHeight() / 2;
+		return Math.max(0, selectedIndex - halfRows);
+	}
+
+	/**
+	 * Screen y of the entry at {@code index}. Entries before the scroll offset (the
+	 * "underflow") stack upwards from the top of the search box instead of overlapping it.
+	 */
+	int rowY(int index, int offset) {
+		int rel = index - offset;
+		if (rel >= 0)
+			return searchBox.getY() + searchBox.getHeight() + rel * rowHeight();
+		return searchBox.getY() + rel * rowHeight();
+	}
+
+	/** Whether the entry at {@code index} is drawn (and therefore clickable). */
+	boolean isRowVisible(int index, int offset) {
+		if (index < offset && !WTMB.Config.drawUndeflowSuggestions)
+			return false;
+		int y = rowY(index, offset);
+		return y + rowHeight() > 0 && y < height;
+	}
+
+	Rect2i rowRect(int index, int offset) {
+		return new Rect2i(searchBox.getX(), rowY(index, offset), searchBox.getWidth(), rowHeight() - 1);
 	}
 
 	/**
@@ -103,86 +141,70 @@ public class SearchScreen extends Screen {
 	*///?}
 
 	void renderEntries(TextDrawer text, int mouseX, int mouseY) {
-		text.draw((selectedIndex + 1) + "/" + matched.size(),
+		int shownIndex = matched.isEmpty() ? 0 : selectedIndex + 1;
+		text.draw(shownIndex + "/" + matched.size(),
 				searchBox.getX() + searchBox.getWidth() + 8, searchBox.getY() + (searchBox.getHeight() / 2) - 4,
 				0xffffffff);
 
-		int i = 0;
 		int rowSize = getEntryHeight();
+		int offset = scrollOffset();
 
-		int halfRows = (height - searchBox.getY() - searchBox.getHeight()) / (rowSize * 2) / 2;
-		int offset = selectedIndex - halfRows;
-		if (selectedIndex < halfRows)
-			offset = 0;
-
-		for (BindingEntry be : matched) {
-			if (!WTMB.Config.drawUndeflowSuggestions && i - offset < 0) {
-				i++;
+		for (int i = 0; i < matched.size(); i++) {
+			if (!isRowVisible(i, offset))
 				continue;
-			}
 
-			Rect2i r = new Rect2i(searchBox.getX(),
-					searchBox.getY() + searchBox.getHeight() + ((i - offset) * rowSize * 2),
-					searchBox.getWidth(), (rowSize * 2) - 1);
+			BindingEntry be = matched.get(i);
+			Rect2i r = rowRect(i, offset);
 
-			Boolean hovered = r.contains(mouseX, mouseY);
-			Boolean selected = selectedIndex == i;
+			boolean hovered = r.contains(mouseX, mouseY);
+			boolean selected = selectedIndex == i;
 
 			int nameColor = selected ? 0xffffff00 : (hovered ? 0xffdddd88 : 0xffdddddd);
 			int keyColor = selected ? 0xff666600 : (hovered ? 0xff666644 : 0xff666666);
 
-			text.draw(be.name,
-					searchBox.getX(),
-					searchBox.getY() + searchBox.getHeight() + ((i - offset) * rowSize * 2),
-					nameColor);
+			int y = r.getY();
+			text.draw(be.name, r.getX(), y, nameColor);
 
 			int catWidth = font.width(be.categoryName);
-			text.draw(be.categoryName,
-					searchBox.getX() + searchBox.getWidth() - catWidth,
-					searchBox.getY() + searchBox.getHeight() + ((i - offset) * rowSize * 2),
-					nameColor);
+			text.draw(be.categoryName, r.getX() + r.getWidth() - catWidth, y, nameColor);
 
 			if (WTMB.Config.showBindIDs) {
-				text.draw(be.id,
-						searchBox.getX(),
-						searchBox.getY() + searchBox.getHeight() + ((i - offset) * rowSize * 2) + rowSize,
-						keyColor);
+				text.draw(be.id, r.getX(), y + rowSize, keyColor);
 
 				catWidth = font.width(be.categoryId);
-				text.draw(be.categoryId,
-						searchBox.getX() + searchBox.getWidth() - catWidth,
-						searchBox.getY() + searchBox.getHeight() + ((i - offset) * rowSize * 2) + rowSize,
-						keyColor);
+				text.draw(be.categoryId, r.getX() + r.getWidth() - catWidth, y + rowSize, keyColor);
 			}
-
-			i++;
 		}
 	}
 
+	/** Moves the selection by {@code delta}, wrapping around, and is a no-op on an empty list. */
+	void moveSelection(int delta) {
+		if (matched.isEmpty()) {
+			selectedIndex = 0;
+			return;
+		}
+		selectedIndex = Math.floorMod(selectedIndex + delta, matched.size());
+	}
+
+	// Keys are compared against InputConstants instead of GLFW: 26.3 swapped GLFW for
+	// SDL, the GLFW class is gone and the key numbers changed. InputConstants has the
+	// right values on every supported version.
 	@Override
 	public boolean keyPressed(KeyEvent input) {
 		int keyCode = input.key();
-		boolean handled = false;
-		if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
+		if (keyCode == InputConstants.KEY_RETURN || keyCode == InputConstants.KEY_NUMPADENTER) {
 			onAccept();
 			return true;
 		}
 
-		else if (keyCode == GLFW.GLFW_KEY_UP) {
-			selectedIndex--;
-			handled = true;
-		} else if (keyCode == GLFW.GLFW_KEY_DOWN || (searchBox.isFocused() && keyCode == GLFW.GLFW_KEY_TAB)) {
-			selectedIndex++;
-			handled = true;
-		}
-
-		if (selectedIndex == -1)
-			selectedIndex = matched.size() - 1;
-		if (selectedIndex == matched.size())
-			selectedIndex = 0;
-
-		if (handled)
+		if (keyCode == InputConstants.KEY_UP) {
+			moveSelection(-1);
 			return true;
+		}
+		if (keyCode == InputConstants.KEY_DOWN || (searchBox.isFocused() && keyCode == InputConstants.KEY_TAB)) {
+			moveSelection(1);
+			return true;
+		}
 
 		return super.keyPressed(input);
 	}
@@ -192,58 +214,39 @@ public class SearchScreen extends Screen {
 		if (verticalAmount == 0)
 			return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
 
-		else if (verticalAmount > 0)
-			selectedIndex--;
-		else
-			selectedIndex++;
-
-		if (selectedIndex == -1)
-			selectedIndex = matched.size() - 1;
-		if (selectedIndex == matched.size())
-			selectedIndex = 0;
-
+		moveSelection(verticalAmount > 0 ? -1 : 1);
 		return true;
 	}
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
-		int button = click.button();
-		double mouseX = click.x();
-		double mouseY = click.y();
-		if (button == GLFW.GLFW_MOUSE_BUTTON_1) {
-			int i = 0;
-			int rowSize = getEntryHeight();
+		// Mouse button numbers changed with SDL in 26.3 (left is 1, not 0), so never
+		// compare against a bare number or a GLFW constant.
+		if (click.button() == InputConstants.MOUSE_BUTTON_LEFT) {
+			int offset = scrollOffset();
+			int mouseX = (int) click.x();
+			int mouseY = (int) click.y();
 
-			int halfRows = (height - searchBox.getY() - searchBox.getHeight()) / (rowSize * 2) / 2;
-			int offset = selectedIndex - halfRows;
-			if (selectedIndex < halfRows)
-				offset = 0;
-
-			for (BindingEntry be : matched) {
-				if (!WTMB.Config.drawUndeflowSuggestions && i - offset < 0) {
-					i++;
-					continue;
-				}
-
-				Rect2i r = new Rect2i(searchBox.getX(),
-						searchBox.getY() + searchBox.getHeight() + ((i - offset) * rowSize * 2),
-						searchBox.getWidth(), (rowSize * 2) - 1);
-
-				if (r.contains((int) mouseX, (int) mouseY)) {
+			for (int i = 0; i < matched.size(); i++) {
+				if (isRowVisible(i, offset) && rowRect(i, offset).contains(mouseX, mouseY)) {
 					selectedIndex = i;
 					onAccept();
 					return true;
 				}
-				i++;
 			}
 		}
 
-		return super.mouseClicked(click, doubled);
+		boolean handled = super.mouseClicked(click, doubled);
+		// Clicking a toggle button focuses it, which stops keystrokes reaching the search
+		// box. The focus is set after the button's handler runs, so restore it here.
+		if (getFocused() != searchBox)
+			setFocused(searchBox);
+		return handled;
 	}
 
 	void onQueryChanged(String query) {
 		BindingEntry oldSelected = null;
-		if (matched.size() != 0)
+		if (selectedIndex >= 0 && selectedIndex < matched.size())
 			oldSelected = matched.get(selectedIndex);
 
 		matched = match(query);
@@ -260,7 +263,7 @@ public class SearchScreen extends Screen {
 	}
 
 	KeyMapping getSelectedBind() {
-		if (matched.size() == 0)
+		if (selectedIndex < 0 || selectedIndex >= matched.size())
 			return null;
 		return matched.get(selectedIndex).bind;
 	}
@@ -269,6 +272,11 @@ public class SearchScreen extends Screen {
 		KeyMapping bind = getSelectedBind();
 		if (bind != null)
 			WTMB.queuePress(bind);
+		onClose();
+	}
+
+	@Override
+	public void onClose() {
 		//? if >=26 {
 		minecraft.gui.setScreen(null);
 		//?} else
@@ -286,10 +294,11 @@ public class SearchScreen extends Screen {
 	}
 
 	List<BindingEntry> match(String query) {
+		String[] terms = query.toLowerCase(Locale.ROOT).trim().split("\\s+");
 		ArrayList<BindingEntry> list = new ArrayList<>();
 
 		for (BindingEntry be : binds) {
-			if (be.matches(query))
+			if (be.matches(terms))
 				list.add(be);
 		}
 
@@ -304,20 +313,27 @@ public class SearchScreen extends Screen {
 			String categoryId = "key.category." + e.getCategory().id().toLanguageKey();
 			String categoryName = Language.getInstance().getOrDefault(categoryId, categoryId);
 
-			BindingEntry be = new BindingEntry(e,
-					e.getName(), name,
-					categoryId, categoryName);
-
-			list.add(be);
+			list.add(new BindingEntry(e, e.getName(), name, categoryId, categoryName));
 		}
 
-		list.sort(Comparator.comparing(BindingEntry::getName));
+		list.sort(Comparator.comparing(BindingEntry::getName, String.CASE_INSENSITIVE_ORDER));
 
 		return list;
 	}
 
-	class BindingEntry {
-		public BindingEntry(KeyMapping bind, String id, String name, String categoryId, String categoryName) {
+	static class BindingEntry {
+		public final KeyMapping bind;
+
+		public final String id;
+		public final String name;
+
+		public final String categoryId;
+		public final String categoryName;
+
+		/** Every searchable field, lower-cased once instead of on every keystroke. */
+		private final String haystack;
+
+		BindingEntry(KeyMapping bind, String id, String name, String categoryId, String categoryName) {
 			this.bind = bind;
 
 			this.id = id;
@@ -325,34 +341,22 @@ public class SearchScreen extends Screen {
 
 			this.categoryId = categoryId;
 			this.categoryName = categoryName;
+
+			this.haystack = String.join("\n", name, id, categoryName, categoryId).toLowerCase(Locale.ROOT);
 		}
-
-		public KeyMapping bind;
-
-		public String id;
-		public String name;
-
-		public String categoryId;
-		public String categoryName;
 
 		public String getName() {
 			return name;
 		}
 
-		public boolean matches(String query) {
-			String[] split = query.toLowerCase().split("\\ ");
-
-			return stringMatches(name, split) ||
-					stringMatches(id, split) ||
-					stringMatches(categoryName, split) ||
-					stringMatches(categoryId, split);
-		}
-
-		boolean stringMatches(String text, String[] split) {
-			for (String q : split) {
-				if (!text.toLowerCase().contains(q)) {
+		/**
+		 * Every term has to appear somewhere in the name, id, category name or category id,
+		 * so "inventory movement" finds a bind named "Inventory" in the Movement category.
+		 */
+		boolean matches(String[] terms) {
+			for (String term : terms) {
+				if (!haystack.contains(term))
 					return false;
-				}
 			}
 			return true;
 		}

@@ -27,7 +27,7 @@ jobs:
       max-parallel: 1
       matrix:
         # Keep in sync with settings.gradle and build.yml.
-        minecraft: ["1.21.11", "26.2"]
+        minecraft: ["1.21.11", "26.2", "26.3"]
     runs-on: ubuntu-latest
     steps:
       - name: checkout repository

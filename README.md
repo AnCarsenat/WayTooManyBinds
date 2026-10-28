@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img alt="Minecraft 1.21.11 and 26.2" src="https://img.shields.io/badge/Minecraft-1.21.11%20%7C%2026.2-5B8731?style=flat-square">
+  <img alt="Minecraft 1.21.11, 26.2 and 26.3" src="https://img.shields.io/badge/Minecraft-1.21.11%20%7C%2026.2%20%7C%2026.3-5B8731?style=flat-square">
   <img alt="Fabric" src="https://img.shields.io/badge/Mod%20loader-Fabric-C1A87D?style=flat-square">
   <img alt="Client only" src="https://img.shields.io/badge/Environment-Client%20only-4A6C9B?style=flat-square">
   <img alt="GPL-3.0" src="https://img.shields.io/badge/License-GPL--3.0-6E5494?style=flat-square">
@@ -49,7 +49,9 @@ Inside the search screen:
 | `Escape` | Close without pressing anything |
 
 The search matches a bind's name and category, and their translation keys too,
-so `key.inventory` finds the same entry as `Open/Close Inventory`.
+so `key.inventory` finds the same entry as `Open/Close Inventory`. Each word you
+type can match a different field, so `inventory movement` narrows to inventory
+binds in the Movement category.
 
 Two toggles sit in the top-left corner of the screen:
 
@@ -74,6 +76,7 @@ written as it is here.
 
 | Minecraft | Java | Notes |
 | --- | --- | --- |
+| 26.3 | 25 | Input runs on SDL instead of GLFW; key codes come from `InputConstants` |
 | 26.2 | 25 | Minecraft ships unobfuscated, so Loom does not remap the mod |
 | 1.21.11 | 21 | Built against Mojang mappings and remapped to intermediary |
 
@@ -88,7 +91,7 @@ selected with `//?` comments, and each target has its own properties in
 
 ```sh
 ./gradlew buildAll          # build every supported version
-./gradlew ":26.2:build"     # build a single version
+./gradlew ":26.3:build"     # build a single version
 ```
 
 Each version writes its jar to `versions/<version>/build/libs/`. There is no jar
@@ -110,6 +113,8 @@ To switch which version the IDE resolves against, edit the
 
 Based on [TooManyBinds](https://modrinth.com/mod/toomanybinds) by
 [Ryhon0](https://github.com/Ryhon0), licensed GPL-3.0.
+
+Ryhon0 dropped the project and archived it (same on github), that's why I updated it to newer versions. I needed it. Others may need it too so I shared it.
 
 Not associated with NebelNidas and dzwdz's
 [too-many-binds](https://github.com/ReviversMC/too-many-binds). The upstream mod

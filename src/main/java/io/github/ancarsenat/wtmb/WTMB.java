@@ -1,6 +1,6 @@
 package io.github.ancarsenat.wtmb;
 
-import net.fabricmc.api.ModInitializer;
+import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 //? if >=26 {
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
@@ -17,29 +17,31 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 
-import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-public class WTMB implements ModInitializer {
+public class WTMB implements ClientModInitializer {
 	public static final Logger LOGGER = LoggerFactory.getLogger("wtmb");
 	static ArrayList<KeyMapping> toPress = new ArrayList<>();
 	static ArrayList<KeyMapping> toRelease = new ArrayList<>();
 
 	@Override
-	public void onInitialize() {
+	public void onInitializeClient() {
 		Config.loadConfig();
 
 		Category category = Category.register(Identifier.fromNamespaceAndPath("wtmb", "wtmb"));
-		KeyMapping searchScreenBind;
-		searchScreenBind = new KeyMapping(
+		// The (name, key, category) constructor defaults to a keyboard key on every
+		// version, so it sidesteps the 26.3 rename of InputConstants.Type.KEYSYM to KEYBOARD.
+		// Key codes come from InputConstants rather than GLFW: 26.3 replaced GLFW with SDL,
+		// and InputConstants carries the right value for each version.
+		KeyMapping searchScreenBind = new KeyMapping(
 				"key.wtmb.search",
-				InputConstants.Type.KEYSYM,
-				GLFW.GLFW_KEY_ENTER,
+				InputConstants.KEY_RETURN,
 				category);
 		//? if >=26 {
 		KeyMappingHelper.registerKeyMapping(searchScreenBind);
@@ -56,11 +58,9 @@ public class WTMB implements ModInitializer {
 			}
 		});
 
-		KeyMapping reloadConfigBind;
-		reloadConfigBind = new KeyMapping(
+		KeyMapping reloadConfigBind = new KeyMapping(
 				"key.wtmb.reloadConfig",
-				InputConstants.Type.KEYSYM,
-				GLFW.GLFW_KEY_UNKNOWN,
+				InputConstants.UNKNOWN.getValue(),
 				category);
 		//? if >=26 {
 		KeyMappingHelper.registerKeyMapping(reloadConfigBind);
@@ -81,7 +81,9 @@ public class WTMB implements ModInitializer {
 			for (KeyMapping bind : toPress) {
 				bind.clickCount++;
 				bind.setDown(true);
-				toRelease.add(bind);
+				// The same bind can be queued twice in a tick; release it only once.
+				if (!toRelease.contains(bind))
+					toRelease.add(bind);
 			}
 			toPress.clear();
 		});
@@ -106,7 +108,12 @@ public class WTMB implements ModInitializer {
 			{
 				if(!Files.exists(configFile)) return;
 
-				JsonObject jo = (JsonObject)JsonParser.parseString(Files.readString(configFile));
+				JsonElement root = JsonParser.parseString(Files.readString(configFile));
+				if (!root.isJsonObject()) {
+					LOGGER.warn("Ignoring config {}: expected a JSON object", configFile);
+					return;
+				}
+				JsonObject jo = root.getAsJsonObject();
 
 				if(jo.has("showBindIDs"))
 					showBindIDs = jo.get("showBindIDs").getAsBoolean();
@@ -127,7 +134,7 @@ public class WTMB implements ModInitializer {
 			try
 			{
 				Files.createDirectories(configDir);
-				Files.writeString(configFile, new Gson().toJson(jo));
+				Files.writeString(configFile, new GsonBuilder().setPrettyPrinting().create().toJson(jo));
 			}catch(Exception e)
 			{
 				LOGGER.error("Failed to save config", e);

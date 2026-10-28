@@ -1,5 +1,6 @@
 {
 	"key.category.wtmb.wtmb": "Way Too Many Binds",
+	"modmenu.descriptionTranslation.wtmb": "Search and simulate keybinds",
 	"searchScreen.title": "Search Keybinds",
 	"key.wtmb.search": "Search Keybinds",
 	"key.wtmb.reloadConfig": "Reload Config"
